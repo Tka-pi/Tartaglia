@@ -198,6 +198,8 @@ all.push(Number(td.firstElementChild.value));
 relic5_matrix.push(all);
 })
 
+let artifact = [relic1_matrix,relic2_matrix,relic3_matrix,relic4_matrix,relic5_matrix];
+
 let weapon_matrix = [];
 let allrowsW = weapon.querySelectorAll('tr');
 allrowsW.forEach(tr=>{
@@ -216,28 +218,6 @@ let C3=relic3_matrix.length;
 let C4=relic4_matrix.length;
 let C5=relic5_matrix.length;
 let Cx=C1*C2*C3*C4*C5;
-
-
-function relic_name(name){
-    if(name==11){
-        return"沈淪";
-    }
-    if(name==7){
-        return "剣闘士";
-    }
-    if(name==5){
-        return"しめ縄";
-    }
-    if(name==3){
-        return "氷風";
-    }
-    if(name==2){
-        return"旧貴族";
-    }
-    if(name==1){
-        return "その他";
-    }
-}
 
 
 
@@ -263,7 +243,8 @@ let beta=Number($("#beta").val());
 let freeze=Number($("#freeze").val());
 let fuyusou=Number($("#fuyusou").val());
 
-let base=[stella,talent1,talent2,talent3,T,dt,b_non,b_sime,alpha,beta,freeze];
+let base=[stella,talent1,talent2,talent3,T,dt,b_non,b_sime,alpha,beta,freeze,fuyusou];
+console.log("基本設定",base);
 
 
 let c1=Number($("#C1").val());
@@ -292,6 +273,8 @@ let n=[n1,n2,n3,n4,n5];
 let m=[m1,m2,m3,m4,m5];
 let p=[pn,pb];
 
+console.log("分布",n,m,p);
+
 let u_atk=Number($("#u_atk").val());
 let u_atkr=Number($("#u_atkr").val());
 let u_crit=Number($("#u_crit").val());
@@ -305,7 +288,9 @@ let u_give=Number($("#u_give").val())*0.01;
 let speed=1+Number($("#speed").val())*0.01;
 let constraint=Number($("#constraint").val());
 
-let u=[u_atk,u_atkr,u_crit,u_critd,u_hydro,u_normal,u_heavy,u_burst,u_give];
+let u=[u_atk,u_atkr,u_crit,u_critd,u_hydro,u_normal,u_heavy,u_burst,u_give,speed,constraint];
+
+console.log("不確定要素",u);
 
 
 
@@ -326,7 +311,7 @@ let B=[
     [742,789,835,882,928,986,1044],
     [605,643,681,719,757,804,851],
     [192,204,216,228,240,255,270]
-]
+];
 
 let Bm=B[0][talent3-8];
 let Br=B[1][talent3-8];
@@ -373,17 +358,6 @@ evn/=normalize_n;
 evnn/=normalize_n;
 evm/=normalize_m;
 evmm/=normalize_m;
-
-
-
-
-
-
-
-
-var alert_label=0;
-let alert_nan=0;
-let alert_minus=0;
 
 
 
@@ -457,9 +431,6 @@ function eval(virtual_atkr,virtual_crit,virtual_critd,virtual_e){
     +b*(v(pb)*evm*(beta*Bm+(1-beta)*Br)+evmm*beta*Bb)*buff_burst;
 
 
-    console.log(model*total_atk*critical);
-
-
     if(charge<(constraint-100)){
         return 0;
     }else{
@@ -468,17 +439,17 @@ function eval(virtual_atkr,virtual_crit,virtual_critd,virtual_e){
 
 }
 
-
-
-
-
-
+var alert_label=0;
+let alert_nan=0;
+let alert_minus=0;
 
 
 let weapon_el = document.getElementById("weapon");
 let weapon_num = weapon_el.rows.length;
 let w_index=[];
 let w_max=[];
+let w_used=[];
+let w_info=[];
 
 for (let w=0;w<weapon_num;w++){
 
@@ -492,7 +463,7 @@ for (let w=0;w<weapon_num;w++){
     var flag_hama=0;
     var flag_hisui=0;
     var flag_zgen=0;
-    let weapon_series=weapon_matrix[w][2];
+    var weapon_series=weapon_matrix[w][2];
     var weapon_refine=weapon_matrix[w][3];
 
     if(weapon_series==8){
@@ -527,10 +498,13 @@ for (let w=0;w<weapon_num;w++){
         atkw=510;
         flag_zgen=1;
     }
+
+    
     
 
     let EV_index=[];
     let EV_vector=[];
+    let used_matrix=[];
     let index=0;
 
     for (let r1=0 ; r1<C1 ; r1++){
@@ -552,9 +526,6 @@ for (let w=0;w<weapon_num;w++){
                         var flag_chin=0;
                         var flag_sime=0;
                         var kizoku=0;
-
-
-
 
                         if(series%(11**2)==0){
                             hydro+=0.15;
@@ -580,7 +551,7 @@ for (let w=0;w<weapon_num;w++){
 
                         ev=eval(0,0,0,0);
 
-
+                        used_matrix[index]=[atk,atkr,crit,critd,e,charge,hydro,flag_chin,flag_sime,kizoku];
                         EV_index[index] = [r1,r2,r3,r4,r5];
                         EV_vector[index] = ev;
                         if(isNaN(ev)){
@@ -623,21 +594,21 @@ if(alert_echo==0){
         alert_echo=1;
     }
 
-
-    let R1=EV_index[max_index][0];
-    let R2=EV_index[max_index][1];
-    let R3=EV_index[max_index][2];
-    let R4=EV_index[max_index][3];
-    let R5=EV_index[max_index][4];
-
-    w_index[w]=[R1,R2,R3,R4,R5];
+    //最大値を与える聖遺物の
+    //used:詳細ステータスベクトル、index:組情報ベクトル、max:最大火力そのもの。
+    w_used[w]=used_matrix[max_index];
+    w_index[w]=EV_index[max_index];
     w_max[w]=max;
+    //記述簡略化のため使った武器の情報を保存。
+    w_info[w]=[atkw,flag_fuyu,flag_hirai,flag_ten,flag_amos,flag_qzou,flag_hama,flag_hisui,flag_zgen];
+
+    console.log("火力期待値",EV_vector);
 }
 
 
 
 
-//火力差計算
+//武器ループから抜けた後
 let w1=Number($('input[name="compare1"]:checked').val());
 let w2=Number($('input[name="compare2"]:checked').val());
 
@@ -648,212 +619,94 @@ if(isNaN(w2)){
     w2=0;
 }
 
+let w_start=w1;
+let w_end=w2;
 
-let w_start=0;
-let w_end=0;
-
-let delta=w_max[w1]-w_max[w2];
-
-if(delta>=0){
+if(w_max[w1]>=w_max[w2]){
     w_start=w2;
     w_end=w1;
 }
-if(delta<0){
-    w_start=w1;
-    w_end=w2;
+
+
+//弱いほうの武器情報を反映
+atkw=       w_info[w_start][0];
+flag_fuyu=  w_info[w_start][1];
+flag_hirai= w_info[w_start][2];
+flag_ten=   w_info[w_start][3];
+flag_amos=  w_info[w_start][4];
+flag_qzou=  w_info[w_start][5];
+flag_hama=  w_info[w_start][6];
+flag_hisui= w_info[w_start][7];
+flag_zgen=  w_info[w_start][8];
+weapon_series=weapon_matrix[w_start][2];
+weapon_refine=weapon_matrix[w_start][3];
+
+console.log(w_info[w_start]);
+
+//その武器の最適聖遺物情報を反映
+atk=        w_used[w_start][0];
+atkr=       w_used[w_start][1];
+crit=       w_used[w_start][2];
+critd=      w_used[w_start][3];
+e=          w_used[w_start][4];
+charge=     w_used[w_start][5];
+hydro=      w_used[w_start][6];
+flag_chin=  w_used[w_start][7];
+flag_sime=  w_used[w_start][8];
+kizoku=     w_used[w_start][9];
+
+let differ=[];
+let limit=[0,0,0,0];
+
+for (let i=0;i<4;i++){
+    let x=0;
+    let dx=1;
+    let loop=0;
+    
+    while(dx>0.001){
+        loop++;
+        if(loop>1000){
+            limit[i]=1;
+            break;
+        }
+
+        let left=[eval(x,0,0,0),eval(0,x,0,0),eval(0,0,x,0),eval(0,0,0,x)];
+        let right=[eval((x+dx),0,0,0),eval(0,(x+dx),0,0),eval(0,0,(x+dx),0),eval(0,0,0,(x+dx))];
+        let a=left[i]-w_max[w_end];
+        let b=right[i]-w_max[w_end];
+
+        if(a*b>0){
+            x+=dx*0.9;
+        }else{
+            dx*=0.5;
+        }
+    }
+
+    differ[i]=x;
 }
+console.log(differ);
 
-    //武器情報を反映
-    atkw=0;
-    flag_fuyu=0;
-    flag_hirai=0;
-    flag_ten=0;
-    flag_amos=0;
-    flag_qzou=0;
-    flag_hama=0;
-    flag_hisui=0;
-    flag_zgen=0;
-    weapon_series=weapon_matrix[w_start][2];
-    weapon_refine=weapon_matrix[w_start][3];
 
-    if(weapon_series==8){
-        atkw=608;
-        flag_fuyu=1;
+function relic_name(name){
+    if(name==11){
+        return"沈淪";
     }
-    if(weapon_series==7){
-        atkw=608;
-        flag_hirai=1;
+    if(name==7){
+        return "剣闘士";
     }
-    if(weapon_series==6){
-        atkw=674;
-        flag_ten=1;
+    if(name==5){
+        return"しめ縄";
     }
-    if(weapon_series==5){
-        atkw=608;
-        flag_amos=1;
+    if(name==3){
+        return "氷風";
     }
-    if(weapon_series==4){
-        atkw=510;
-        flag_qzou=1;
+    if(name==2){
+        return"旧貴族";
     }
-    if(weapon_series==3){
-        atkw=454;
-        flag_hama=1;
-    }
-    if(weapon_series==2){
-        atkw=510;
-        flag_hisui=1;
-    }
-    if(weapon_series==1){
-        atkw=510;
-        flag_zgen=1;
-    }
-
-let vR1=w_index[w_start][0];
-let vR2=w_index[w_start][1];
-let vR3=w_index[w_start][2];
-let vR4=w_index[w_start][3];
-let vR5=w_index[w_start][4];
-
-console.log(w1);
-
-let w1r1=w_index[w1][0];
-let w1r2=w_index[w1][1];
-let w1r3=w_index[w1][2];
-let w1r4=w_index[w1][3];
-let w1r5=w_index[w1][4];
-let w2r1=w_index[w2][0];
-let w2r2=w_index[w2][1];
-let w2r3=w_index[w2][2];
-let w2r4=w_index[w2][3];
-let w2r5=w_index[w2][4];
-
-
-
-series= relic1_matrix[vR1][0]*relic2_matrix[vR2][0]*relic3_matrix[vR3][0]*relic4_matrix[vR4][0]*relic5_matrix[vR5][0];
-atk=    relic1_matrix[vR1][1]+relic2_matrix[vR2][1]+relic3_matrix[vR3][1]+relic4_matrix[vR4][1]+relic5_matrix[vR5][1];
-atkr=   relic1_matrix[vR1][2]+relic2_matrix[vR2][2]+relic3_matrix[vR3][2]+relic4_matrix[vR4][2]+relic5_matrix[vR5][2];
-crit=   relic1_matrix[vR1][3]+relic2_matrix[vR2][3]+relic3_matrix[vR3][3]+relic4_matrix[vR4][3]+relic5_matrix[vR5][3];
-critd=  relic1_matrix[vR1][4]+relic2_matrix[vR2][4]+relic3_matrix[vR3][4]+relic4_matrix[vR4][4]+relic5_matrix[vR5][4];
-e=      relic1_matrix[vR1][5]+relic2_matrix[vR2][5]+relic3_matrix[vR3][5]+relic4_matrix[vR4][5]+relic5_matrix[vR5][5];
-charge= relic1_matrix[vR1][6]+relic2_matrix[vR2][6]+relic3_matrix[vR3][6]+relic4_matrix[vR4][6]+relic5_matrix[vR5][6];
-hydro=  0.288+relic4_matrix[vR4][7]*0.01;
-
-ev=0;
-flag_chin=0;
-flag_sime=0;
-kizoku=0;
-
-if(series%(11**2)==0){
-    hydro+=0.15;
-}
-if(series%(11**4)==0){
-    flag_chin=1;
-}
-if(series%(7**2)==0){
-    atkr+=18;
-}
-if(series%(5**2)==0){
-    atkr+=18;
-}
-if(series%(5**4)==0){
-    flag_sime=1;
-}
-if(series%(3**4)==0){
-    crit+=40*freeze;
-}
-if(series%(2**2)==0){
-    kizoku=0.2;
-}
-
-
-let va=0;
-let da=1;
-let loop=0;
-let limit_a=0;
-
-while(da>0.001){
-    loop++;
-    if(loop>1000){
-        limit_a=1;
-        break;
-    }
-    let left=eval(va,0,0,0)-w_max[w_end];
-    let right=eval((va+da),0,0,0)-w_max[w_end];
-    if(left*right>0){
-        va+=da*0.9;
-    }else{
-        da*=0.5;
+    if(name==1){
+        return "その他";
     }
 }
-
-let vc=0;
-let dc=1;
-let limit_c=0;
-loop=0;
-
-while(dc>0.001){
-    loop++;
-    if(loop>1000){
-        limit_c=1;
-        break;
-    }
-    let left=eval(0,vc,0,0)-w_max[w_end];
-    let right=eval(0,(vc+dc),0,0)-w_max[w_end];
-    if(left*right>0){
-        vc+=dc*0.9;
-    }else{
-        dc*=0.5;
-    }
-}
-
-let vcd=0;
-let dcd=1;
-let limit_cd=0;
-loop=0;
-
-while(dcd>0.001){
-    loop++;
-    if(loop>1000){
-        limit_cd=1;
-        break;
-    }
-    let left=eval(0,0,vcd,0)-w_max[w_end];
-    let right=eval(0,0,(vcd+dcd),0)-w_max[w_end];
-    if(left*right>0){
-        vcd+=dcd*0.9;
-    }else{
-        dcd*=0.5;
-    }
-}
-
-let ve=0;
-let de=1;
-let limit_e=0;
-loop=0;
-
-while(de>0.001){
-    loop++;
-    if(loop>1000){
-        limit_e=1;
-        break;
-    }
-    let left=eval(0,0,0,ve)-w_max[w_end];
-    let right=eval(0,0,0,(ve+de))-w_max[w_end];
-    if(left*right>0){
-        ve+=de*0.9;
-    }else{
-        de*=0.5;
-    }
-}
-
-
-console.log(va,vc,vcd,ve);
-
-
-
-
-
 
 function weapon_name(wname){
     if(wname==8){
@@ -883,90 +736,21 @@ function weapon_name(wname){
 }
 
 
-
-
-
-
-
-
-
-
 let power = document.getElementById('power');
 let power_shift = document.getElementById('power_shift');
 let result1 = document.getElementById('result1');
 let result2 = document.getElementById('result2');
 
-
-
-
 if(alert_label==0){
-    result1.rows[0].cells[1].innerHTML=relic_name(relic1_matrix[w1r1][0]);
-    result1.rows[1].cells[1].innerHTML=relic_name(relic2_matrix[w1r2][0]);
-    result1.rows[2].cells[1].innerHTML=relic_name(relic3_matrix[w1r3][0]);
-    result1.rows[3].cells[1].innerHTML=relic_name(relic4_matrix[w1r4][0]);
-    result1.rows[4].cells[1].innerHTML=relic_name(relic5_matrix[w1r5][0]);
-
-    for(let s=2;s<=(ref+1);s++){
-    result1.rows[0].cells[s].innerHTML=relic1_matrix[w1r1][s-1];
-    result1.rows[1].cells[s].innerHTML=relic2_matrix[w1r2][s-1];
-    result1.rows[2].cells[s].innerHTML=relic3_matrix[w1r3][s-1];
-    result1.rows[3].cells[s].innerHTML=relic4_matrix[w1r4][s-1];
-    result1.rows[4].cells[s].innerHTML=relic5_matrix[w1r5][s-1];
-    }
-
-    if(relic4_matrix[w1r4][ref+1]>1){
-        result1.rows[3].cells[0].innerHTML="杯(水)";
-    }else{
-        result1.rows[3].cells[0].innerHTML="杯";
-    }
-
-    result2.rows[0].cells[1].innerHTML=relic_name(relic1_matrix[w2r1][0]);
-    result2.rows[1].cells[1].innerHTML=relic_name(relic2_matrix[w2r2][0]);
-    result2.rows[2].cells[1].innerHTML=relic_name(relic3_matrix[w2r3][0]);
-    result2.rows[3].cells[1].innerHTML=relic_name(relic4_matrix[w2r4][0]);
-    result2.rows[4].cells[1].innerHTML=relic_name(relic5_matrix[w2r5][0]);
-
-    for(let s=2;s<=(ref+1);s++){
-    result2.rows[0].cells[s].innerHTML=relic1_matrix[w2r1][s-1];
-    result2.rows[1].cells[s].innerHTML=relic2_matrix[w2r2][s-1];
-    result2.rows[2].cells[s].innerHTML=relic3_matrix[w2r3][s-1];
-    result2.rows[3].cells[s].innerHTML=relic4_matrix[w2r4][s-1];
-    result2.rows[4].cells[s].innerHTML=relic5_matrix[w2r5][s-1];
-    }
-
-    if(relic4_matrix[w2r4][ref+1]>1){
-        result2.rows[3].cells[0].innerHTML="杯(水)";
-    }else{
-        result2.rows[3].cells[0].innerHTML="杯";
-    }
-
-
-    power_shift.rows[0].cells[1].innerHTML=va.toFixed(2);
-    power_shift.rows[0].cells[2].innerHTML=vc.toFixed(2);
-    power_shift.rows[0].cells[3].innerHTML=vcd.toFixed(2);
-    power_shift.rows[0].cells[4].innerHTML=ve.toFixed();
-
-    if(limit_a==1){
-        power_shift.rows[0].cells[1].innerHTML="不可能";
-    }
-    if(limit_c==1){
-        power_shift.rows[0].cells[2].innerHTML="不可能";
-    }
-    if(limit_cd==1){
-        power_shift.rows[0].cells[3].innerHTML="不可能";
-    }
-    if(limit_e==1){
-        power_shift.rows[0].cells[4].innerHTML="不可能";
-    }
-
+    //火力表示
     for (let y=0 ;y<weapon_num; y++){
         if(power.rows.length<weapon_num){
             let newrow  = power.insertRow(y);
-            let newcell0 = newrow.insertCell(0);
-            let newcell1 = newrow.insertCell(1);
-            let newcell2 = newrow.insertCell(2);
-            let newcell3 = newrow.insertCell(3);
+            for(let i=0;i<4;i++){
+                let newcell0 = newrow.insertCell(i);
+            }
         }
+        
         if(y==w1&&y==w2){
             power.rows[y].cells[0].innerHTML="A,B";
         }else{
@@ -974,6 +758,8 @@ if(alert_label==0){
                 power.rows[y].cells[0].innerHTML="A";
             }else if(y==w2){
                 power.rows[y].cells[0].innerHTML="B";
+            }else{
+                power.rows[y].cells[0].innerHTML="";
             }
         }
 
@@ -982,18 +768,56 @@ if(alert_label==0){
         power.rows[y].cells[2].innerHTML=weapon_matrix[y][3];
         power.rows[y].cells[3].innerHTML=(w_max[y]/10000).toFixed();
     }
+
+    //換算火力表示
+    power_shift.rows[0].cells[1].innerHTML=differ[0].toFixed(2);
+    power_shift.rows[0].cells[2].innerHTML=differ[1].toFixed(2);
+    power_shift.rows[0].cells[3].innerHTML=differ[2].toFixed(2);
+    power_shift.rows[0].cells[4].innerHTML=differ[3].toFixed();
+
+    if(w1==w2){
+        for(let i=0;i<4;i++){
+            power_shift.rows[0].cells[i+1].innerHTML="なし";
+        }
+    }
+
+    for (let i=0;i<4;i++){
+        if(limit[i]==1){
+            power_shift.rows[0].cells[i+1].innerHTML="×";
+        }
+    }
+
+
+
+    //結果表示
+    //聖遺物のシリーズ名を表示
+    for (let i=0;i<5;i++){
+        result1.rows[i].cells[1].innerHTML=relic_name(artifact[i][(w_index[w1][i])][0]);
+
+        for(let s=2;s<=(ref+1);s++){
+            result1.rows[i].cells[s].innerHTML=artifact[i][(w_index[w1][i])][s-1];
+        }
+    }
+    //詳細を表示
+    if(relic4_matrix[w_index[w1][3]][ref+1]>1){
+        result1.rows[3].cells[0].innerHTML="杯(水)";
+    }else{
+        result1.rows[3].cells[0].innerHTML="杯";
+    }
+
+    //結果2同様
+    for (let i=0;i<5;i++){
+        result2.rows[i].cells[1].innerHTML=relic_name(artifact[i][(w_index[w2][i])][0]);
+
+        for(let s=2;s<=(ref+1);s++){
+            result2.rows[i].cells[s].innerHTML=artifact[i][(w_index[w2][i])][s-1];
+        }
+    }
+
+    if(relic4_matrix[w_index[w2][3]][ref+1]>1){
+        result2.rows[3].cells[0].innerHTML="杯(水)";
+    }else{
+        result2.rows[3].cells[0].innerHTML="杯";
+    }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
